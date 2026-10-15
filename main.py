@@ -4,9 +4,10 @@ import sys
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
+from aiogram.fsm.storage.memory import MemoryStorage
 
 from config import BOT_TOKEN
-from handlers import start, steps, quiz, bugs, code_view
+from handlers import start, practice, steps, quiz, bugs, code_view
 
 logging.basicConfig(
     level=logging.INFO,
@@ -27,9 +28,11 @@ async def main() -> None:
         token=BOT_TOKEN,
         default=DefaultBotProperties(parse_mode=ParseMode.HTML)
     )
-    dp = Dispatcher()
+    storage = MemoryStorage()
+    dp = Dispatcher(storage=storage)
 
-    # Register routers
+    # Register routers in priority order
+    dp.include_router(practice.router)
     dp.include_router(start.router)
     dp.include_router(steps.router)
     dp.include_router(quiz.router)
