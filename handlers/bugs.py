@@ -110,7 +110,7 @@ async def cb_bug_finish(callback: CallbackQuery) -> None:
     
     buttons = [
         [
-            InlineKeyboardButton(text="⭐ Посмотреть эталонный код", callback_data="view_best_practice"),
+            InlineKeyboardButton(text="✍️ Тренажер написания кода", callback_data="practice_list"),
             InlineKeyboardButton(text="🔄 Повторить тренажер", callback_data="bug_start")
         ],
         [

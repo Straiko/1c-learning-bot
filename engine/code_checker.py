@@ -30,6 +30,13 @@ def clean_statements(text: str) -> List[Tuple[str, str, Tuple[str, ...]]]:
                 statements.append((line.strip(), line_clean, tuple(toks)))
     return statements
 
+def get_env_for_statement(toks: Tuple[str, ...], default_env: str, current_env: str) -> str:
+    if toks and toks[0] == "&наклиенте":
+        return "&НаКлиенте"
+    if toks and toks[0] == "&насервере":
+        return "&НаСервере"
+    return current_env or default_env
+
 def diagnose_mismatch(user_raw: str, exp_raw: str, u_tokens: List[str], e_tokens: List[str]) -> str:
     # Check directive
     if e_tokens and e_tokens[0] in ("&наклиенте", "&насервере"):
@@ -60,6 +67,16 @@ def check_code_submission(user_code: str, expected_code: str, env_name: str, env
     exp_stmts = clean_statements(expected_code)
     user_stmts = clean_statements(user_code)
 
+    # Precompute environment per expected statement
+    exp_envs = []
+    curr = "&НаКлиенте" if env_name.startswith("&НаКлиенте") else "&НаСервере"
+    for _, _, toks in exp_stmts:
+        if toks and toks[0] == "&наклиенте":
+            curr = "&НаКлиенте"
+        elif toks and toks[0] == "&насервере":
+            curr = "&НаСервере"
+        exp_envs.append(curr)
+
     if not user_stmts:
         return {
             "is_correct": False,
@@ -68,6 +85,7 @@ def check_code_submission(user_code: str, expected_code: str, env_name: str, env
             "total_expected": len(exp_stmts),
             "errors": [{
                 "type": "empty",
+                "env": curr,
                 "message": "Вы не ввели код! Пожалуйста, отправьте текст программы.",
                 "user_line": "",
                 "expected_line": exp_stmts[0][0] if exp_stmts else ""
@@ -87,7 +105,6 @@ def check_code_submission(user_code: str, expected_code: str, env_name: str, env
         if tag == "equal":
             matched_count += (i2 - i1)
         elif tag == "replace":
-            # Some statements were modified
             e_range = list(range(i1, i2))
             u_range = list(range(j1, j2))
             common_len = min(len(e_range), len(u_range))
@@ -99,24 +116,25 @@ def check_code_submission(user_code: str, expected_code: str, env_name: str, env
                 msg = diagnose_mismatch(user_raw, exp_raw, list(u_toks), list(e_toks))
                 errors.append({
                     "type": "mismatch",
+                    "env": exp_envs[e_idx],
                     "user_line_no": u_idx + 1,
                     "user_line": user_raw,
                     "expected_line": exp_raw,
                     "message": msg
                 })
-            # Any remaining in expected are missing lines
             for k in range(common_len, len(e_range)):
                 e_idx = e_range[k]
                 errors.append({
                     "type": "missing",
+                    "env": exp_envs[e_idx],
                     "expected_line": exp_stmts[e_idx][0],
                     "message": f"Пропущена строка: <code>{exp_stmts[e_idx][0]}</code>"
                 })
-            # Any remaining in user are extra lines
             for k in range(common_len, len(u_range)):
                 u_idx = u_range[k]
                 errors.append({
                     "type": "extra",
+                    "env": exp_envs[e_range[-1]] if e_range else curr,
                     "user_line_no": u_idx + 1,
                     "user_line": user_stmts[u_idx][0],
                     "message": f"Лишняя строка: <code>{user_stmts[u_idx][0]}</code>"
@@ -125,6 +143,7 @@ def check_code_submission(user_code: str, expected_code: str, env_name: str, env
             for e_idx in range(i1, i2):
                 errors.append({
                     "type": "missing",
+                    "env": exp_envs[e_idx],
                     "expected_line": exp_stmts[e_idx][0],
                     "message": f"Пропущена строка: <code>{exp_stmts[e_idx][0]}</code>"
                 })
@@ -132,6 +151,7 @@ def check_code_submission(user_code: str, expected_code: str, env_name: str, env
             for u_idx in range(j1, j2):
                 errors.append({
                     "type": "extra",
+                    "env": curr,
                     "user_line_no": u_idx + 1,
                     "user_line": user_stmts[u_idx][0],
                     "message": f"Лишняя строка: <code>{user_stmts[u_idx][0]}</code>"

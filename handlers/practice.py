@@ -30,8 +30,14 @@ def get_section_keyboard(sec_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 def get_sections_list_keyboard() -> InlineKeyboardMarkup:
-    buttons = []
+    buttons = [
+        [
+            InlineKeyboardButton(text="🎯 Написать весь код целиком (1 Total Test)", callback_data="prac_start_5")
+        ]
+    ]
     for s in PRACTICE_SECTIONS:
+        if s["id"] == 5:
+            continue
         btn_text = f"Секция {s['id']}: {s['title'].split(':')[1].strip()}"
         buttons.append([
             InlineKeyboardButton(text=btn_text, callback_data=f"prac_start_{s['id']}")
@@ -161,27 +167,28 @@ async def handle_practice_code_submission(message: Message, state: FSMContext) -
         # Errors detected
         errors_list = []
         for idx, err in enumerate(result["errors"][:5], 1):  # show top 5 errors
+            env_tag = f"[{err.get('env', '')}] " if err.get("env") else ""
             if err["type"] == "mismatch":
                 err_text = (
-                    f"<b>Ошибка #{idx}</b> (строка {err.get('user_line_no', '?')}):\n"
+                    f"<b>Ошибка #{idx} {env_tag}</b>(строка {err.get('user_line_no', '?')}):\n"
                     f"Ваш код: <code>{html.escape(err['user_line'])}</code>\n"
                     f"Ожидалось: <code>{html.escape(err['expected_line'])}</code>\n"
                     f"👉 <i>{err['message']}</i>"
                 )
             elif err["type"] == "missing":
                 err_text = (
-                    f"<b>Ошибка #{idx} (пропуск строки):</b>\n"
-                    f"Ожидалась строка со скриншота: <code>{html.escape(err['expected_line'])}</code>\n"
+                    f"<b>Ошибка #{idx} {env_tag}(пропуск строки):</b>\n"
+                    f"Ожидалась строка: <code>{html.escape(err['expected_line'])}</code>\n"
                     f"👉 <i>{err['message']}</i>"
                 )
             elif err["type"] == "extra":
                 err_text = (
-                    f"<b>Ошибка #{idx} (лишняя строка {err.get('user_line_no', '?')}):</b>\n"
+                    f"<b>Ошибка #{idx} {env_tag}(лишняя строка {err.get('user_line_no', '?')}):</b>\n"
                     f"Вы написали: <code>{html.escape(err['user_line'])}</code>\n"
                     f"👉 <i>{err['message']}</i>"
                 )
             else:
-                err_text = f"<b>Ошибка #{idx}:</b> {err['message']}"
+                err_text = f"<b>Ошибка #{idx} {env_tag}:</b> {err['message']}"
             errors_list.append(err_text)
 
         formatted_errors = "\n\n".join(errors_list)

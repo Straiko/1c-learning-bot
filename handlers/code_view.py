@@ -1,18 +1,18 @@
 import html
 from aiogram import Router, F
 from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
-from content.raw_code import ORIGINAL_CODE, EXPECTED_JSON, BEST_PRACTICE_CODE
+from content.raw_code import SCREENSHOT_CODE, EXPECTED_JSON
 
 router = Router()
 
 def get_code_back_keyboard() -> InlineKeyboardMarkup:
     buttons = [
         [
-            InlineKeyboardButton(text="📄 Исходный код", callback_data="view_original_code"),
-            InlineKeyboardButton(text="📦 Пример JSON", callback_data="view_json"),
+            InlineKeyboardButton(text="✍️ Тренажер: написать этот код", callback_data="practice_list"),
         ],
         [
-            InlineKeyboardButton(text="⭐ Эталонный вариант", callback_data="view_best_practice"),
+            InlineKeyboardButton(text="📄 Код со скриншота", callback_data="view_original_code"),
+            InlineKeyboardButton(text="📦 Пример JSON-файла", callback_data="view_json"),
         ],
         [
             InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu")
@@ -22,9 +22,9 @@ def get_code_back_keyboard() -> InlineKeyboardMarkup:
 
 @router.callback_query(F.data == "view_original_code")
 async def cb_view_original(callback: CallbackQuery) -> None:
-    safe_code = html.escape(ORIGINAL_CODE)
+    safe_code = html.escape(SCREENSHOT_CODE)
     text = (
-        "<b>📄 Исходный код со скриншота:</b>\n\n"
+        "<b>📄 Исходный код со скриншота (1 в 1):</b>\n\n"
         f"<pre><code class=\"language-bsl\">{safe_code}</code></pre>"
     )
     await callback.message.edit_text(text, reply_markup=get_code_back_keyboard(), parse_mode="HTML")
@@ -36,19 +36,6 @@ async def cb_view_json(callback: CallbackQuery) -> None:
     text = (
         "<b>📦 Пример входного JSON-файла:</b>\n\n"
         f"<pre><code class=\"language-json\">{safe_json}</code></pre>"
-    )
-    await callback.message.edit_text(text, reply_markup=get_code_back_keyboard(), parse_mode="HTML")
-    await callback.answer()
-
-@router.callback_query(F.data == "view_best_practice")
-async def cb_view_best_practice(callback: CallbackQuery) -> None:
-    safe_code = html.escape(BEST_PRACTICE_CODE)
-    text = (
-        "<b>⭐ Эталонная реализация (по стандартам 1С):</b>\n\n"
-        "• Асинхронная отправка файла на сервер через временное хранилище\n"
-        "• Корректное чтение через <code>ЧтениеJSON</code>\n"
-        "• Однократное обновление списка без циклического автообновления\n\n"
-        f"<pre><code class=\"language-bsl\">{safe_code}</code></pre>"
     )
     await callback.message.edit_text(text, reply_markup=get_code_back_keyboard(), parse_mode="HTML")
     await callback.answer()
