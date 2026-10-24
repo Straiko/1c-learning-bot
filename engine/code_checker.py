@@ -43,14 +43,25 @@ def diagnose_mismatch(user_raw: str, exp_raw: str, u_tokens: List[str], e_tokens
         if not u_tokens or u_tokens[0] != e_tokens[0]:
             return f"Забыта директива контекста: на скриншоте указано <code>{exp_raw}</code>"
 
-    # Specific method name checks from the screenshot
-    if "прочитатьзначениеjson" in e_tokens and "прочитатьjson" in u_tokens:
-        return "На скриншоте используется именно <code>ПрочитатьЗначениеJSON</code>, а вы написали <code>ПрочитатьJSON</code>"
+    # Specific checks from the screenshot
+    if "чтениеjson" in e_tokens and "текстовыйдокумент" in u_tokens:
+        return "На скриншоте чтение файла выполняется через <code>Новый ЧтениеJSON</code> и <code>ЧтениеJSON.ОткрытьФайл(...)</code>, а не через <code>ТекстовыйДокумент</code>"
+
+    if "прочитатьjson" in e_tokens and "прочитатьзначениеjson" in u_tokens:
+        return "На скриншоте используется функция <code>ПрочитатьJSON(ЧтениеJSON, Истина)</code>, а не <code>ПрочитатьЗначениеJSON</code>"
+
+    if "контрагент" in e_tokens and "контрагенты" in u_tokens:
+        return "На скриншоте имя справочника указано в единственном числе: <code>Справочники.Контрагент</code>, а не <code>Контрагенты</code>"
+
+    if "[" in e_tokens and "." in u_tokens and "текущаястрока" in e_tokens and "текущаястрока" in u_tokens:
+        return 'На скриншоте обращение к свойству выполняется через индекс Соответствия в скобках: <code>ТекущаяСтрока["..."]</code>, а не через точку'
 
     # Compare token by token
     for u, e in zip(u_tokens, e_tokens):
         if u != e:
             if u.startswith('"') and e.startswith('"'):
+                if u.lower() == e.lower():
+                    return f"Обратите внимание на регистр букв в строке: вы написали <code>{u}</code>, а на скриншоте <code>{e}</code>"
                 return f"Не совпадает текст в кавычках: вы написали <code>{u}</code>, а на скриншоте <code>{e}</code>"
             return f"Несовпадение: вы написали <code>{u}</code>, а на скриншоте <code>{e}</code>"
 
